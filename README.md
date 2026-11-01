@@ -12,6 +12,7 @@
 ---
 
 ## 📑 Table of Contents
+- [📚 Documentation Library](#-documentation-library)
 - [🎯 The Problem: Single-PR Blindness](#-the-problem-single-pr-blindness)
 - [🔬 How It Works: The 7 Intelligence Layers](#-how-it-works-the-7-intelligence-layers)
 - [🌐 Supported Languages & Multi-Asset Reducers](#-supported-languages--multi-asset-reducers)
@@ -30,6 +31,19 @@
 - [💻 Standalone Binary & IDE MCP Server (Cursor & Claude Code)](#-standalone-binary--ide-mcp-server-cursor--claude-code)
 - [🛡️ Privacy & Zero Token Bleed](#️-privacy--zero-token-bleed)
 
+---
+
+## 📚 Documentation Library
+
+Explore the complete documentation for GDSS Standalone CLI, IDE MCP Server, and GitHub Actions Radar:
+
+| Guide | Description | Target Audience |
+| :--- | :--- | :--- |
+| [**💻 Standalone Binary & MCP Guide**](docs/STANDALONE_BINARY_AND_MCP_GUIDE.md) | Universal 1-line installation for Linux, macOS, and Windows. IDE MCP setup for Cursor, Claude Code, and Copilot. | Developers & Testers |
+| [**📖 Complete User & Integrator Guide**](docs/USER_GUIDE.md) | The 4 operational modes, CLI commands, safe landing lifecycle with guarded apply and rollback. | All Users |
+| [**⚙️ Repository Configuration Guide**](docs/CONFIGURATION_GUIDE.md) | Comprehensive `.gdss.yml` schema, explicit context window sizing, model suitability matrix, and provider recipes. | Maintainers & DevOps |
+| [**🛰️ GitHub Actions CI Guide**](docs/GITHUB_ACTIONS_GUIDE.md) | Multi-PR batch handling, sticky PR comments, strict branch protection gating, and fork handling. | CI/CD Engineers |
+| [**🌐 Universal Multi-Asset Guide**](docs/UNIVERSAL_MULTI_ASSET_GUIDE.md) | How GDSS audits package manifests (`package.json`), database migrations (split-head hazards), and SQL DDL. | Full-Stack & DBAs |
 ---
 
 ## 🎯 The Problem: Single-PR Blindness
@@ -556,7 +570,7 @@ def login(username: str, token: str, timeout: int = 30) -> AuthResponse:
     client = get_oauth_client(timeout=timeout)
     return client.authenticate(username, token)
 ```
-```
+
 
 Developers can click **"Commit suggestion"** directly inside the GitHub PR UI to land the validated reconciliation with zero manual cherry-picking.
 
