@@ -14,7 +14,7 @@
 radar:
   # The LLM used for semantic patch reconciliation & contract synthesis.
   # Popular options:
-  #   - "gpt-4o" (GitHub Models default, OpenAI)
+  #   - "gpt-4o" (Microsoft Azure AI Foundry, OpenAI)
   #   - "gpt-4o-mini" (Fast, lightweight, low-cost)
   #   - "deepseek-chat" (DeepSeek V3 / R1)
   #   - "claude-3-5-sonnet-20241022" (OpenRouter / Anthropic)
@@ -32,20 +32,23 @@ radar:
   # causing unnecessary ellipsis condensation (/* ... N lines condensed ... */).
   #
   # Reference sizes:
+  #   gemini-1.5-pro / 2.0-pro: 2000000
+  #   gemini-1.5-flash: 1000000
+  #   claude-3-5-sonnet: 200000
   #   gpt-4o: 128000
   #   gpt-4o-mini: 128000
-  #   deepseek-chat: 64000
-  #   claude-3-5-sonnet: 200000
   #   llama-3.3-70b: 128000
+  #   deepseek-chat: 64000
   context_window: 128000
 
   # LLM Provider:
-  #   - "github" (default in CI: uses free GitHub Models via GITHUB_TOKEN)
+  #   - "openrouter" (Recommended free tier & multi-model gateway via OPENROUTER_API_KEY)
   #   - "openai" (uses OPENAI_API_KEY)
-  #   - "openrouter" (uses OPENROUTER_API_KEY)
   #   - "deepseek" (uses DEEPSEEK_API_KEY)
+  #   - "copilot" (GitHub Copilot CLI in CI via GITHUB_TOKEN & copilot-requests: write)
   #   - "ollama" / "vllm" (for self-hosted local setups)
-  provider: "github"
+  provider: "openrouter"
+  model: "qwen/qwen-2.5-coder-32b-instruct"
 
   # Collision risk sensitivity threshold (0.0 to 1.0).
   # Collisions with severity >= risk_threshold will be flagged in the PR report.
@@ -60,6 +63,16 @@ radar:
   # ephemeral Git worktree. If tests fail, it feeds the compiler error trace back
   # to the model to refine the patch up to max_refinements times.
   max_refinements: 2
+
+  # Maximum concurrent worker threads for parallel conflict drafting.
+  # Default: 4
+  concurrency_limit: 4
+
+  # Context preservation policy:
+  #   - "lossless" (default: preserves 100% of code tokens without aggressive truncation)
+  #   - "ast_minimal" (signatures and symbol bodies only)
+  #   - "off" (raw context)
+  condensation: "lossless"
 
   # Branch protection gating:
   # If true, the CI job exits with code 1 when severe collisions are detected.
