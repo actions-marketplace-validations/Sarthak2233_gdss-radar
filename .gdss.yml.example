@@ -8,19 +8,33 @@
 # automatically load these settings as the single source of truth.
 # ==============================================================================
 
+# Configuration schema version (currently 1)
+version: 1
+
 # ------------------------------------------------------------------------------
 # 1. AI Convergence & PR Collision Radar
 # ------------------------------------------------------------------------------
 radar:
-  # The LLM used for semantic patch reconciliation & contract synthesis.
+  # LLM Provider:
+  #   - "openrouter" (Recommended free tier & multi-model gateway via OPENROUTER_API_KEY)
+  #   - "openai" (uses OPENAI_API_KEY)
+  #   - "deepseek" (uses DEEPSEEK_API_KEY)
+  #   - "copilot" (GitHub Copilot CLI in CI via GITHUB_TOKEN & copilot-requests: write)
+  #   - "ollama" / "vllm" (for self-hosted local setups)
+  provider: "openrouter"
+
+  # The LLM model used for semantic patch reconciliation & contract synthesis.
   # Popular options:
-  #   - "gpt-4o" (Microsoft Azure AI Foundry, OpenAI)
-  #   - "gpt-4o-mini" (Fast, lightweight, low-cost)
+  #   - "openrouter/free" (OpenRouter automated zero-cost router - default)
+  #   - "gpt-4o-mini" / "gpt-4o" (Microsoft Azure AI Foundry, OpenAI)
   #   - "deepseek-chat" (DeepSeek V3 / R1)
   #   - "claude-3-5-sonnet-20241022" (OpenRouter / Anthropic)
   #   - "llama-3.3-70b-versatile" (Groq / OpenRouter)
   #   - "qwen2.5-coder:7b" (Local Ollama / vLLM)
-  model: "gpt-4o"
+  model: "openrouter/free"
+
+  # Custom API base URL (optional, for self-hosted LLM endpoints or OpenAI-compatible proxies):
+  # base_url: "https://openrouter.ai/api/v1"
 
   # [RECOMMENDED BEST PRACTICE] Explicit Context Window (in tokens)
   # ----------------------------------------------------------------------------
@@ -40,15 +54,6 @@ radar:
   #   llama-3.3-70b: 128000
   #   deepseek-chat: 64000
   context_window: 128000
-
-  # LLM Provider:
-  #   - "openrouter" (Recommended free tier & multi-model gateway via OPENROUTER_API_KEY)
-  #   - "openai" (uses OPENAI_API_KEY)
-  #   - "deepseek" (uses DEEPSEEK_API_KEY)
-  #   - "copilot" (GitHub Copilot CLI in CI via GITHUB_TOKEN & copilot-requests: write)
-  #   - "ollama" / "vllm" (for self-hosted local setups)
-  provider: "openrouter"
-  model: "openrouter/free"  # OpenRouter automated free router, or "gpt-4o-mini", "deepseek-chat"
 
   # Collision risk sensitivity threshold (0.0 to 1.0).
   # Collisions with severity >= risk_threshold will be flagged in the PR report.
@@ -85,6 +90,29 @@ radar:
 # GDSS validates candidate reconciliation patches in isolated temporary Git
 # worktrees before human review. Configure your project's validation commands:
 validation:
+  # Validation mode:
+  #   - "targeted" (default): filters tests and typechecking strictly to changed files or targeted test files
+  #   - "full_suite": runs the full unconstrained test suite in the ephemeral worktree
+  mode: "targeted"
+
+  # Worktree dependency optimization:
+  # When true (default), GDSS symlinks parent node_modules, .venv, and vendor directories
+  # into ephemeral sandbox worktrees if package manifests are unmodified, saving minutes of build time.
+  symlink_dependencies: true
+
+  # Optional package installation command executed inside the ephemeral worktree
+  # prior to static typechecking and tests (e.g. "npm ci", "poetry install", "pip install -e .").
+  # install_command: "npm ci"
+
+  # Multi-language syntax compilation or fast syntax linter command (Gate 1).
+  # Use {file} placeholder for targeted changed files.
+  # If omitted, GDSS runs in-process Tree-sitter AST validation across 9+ languages.
+  # Examples:
+  #   Python:        "python3 -m py_compile {file}"
+  #   TypeScript/JS: "npx eslint --no-ignore {file}"
+  #   Go:            "go vet {file}"
+  # syntax_command: "python3 -m py_compile {file}"
+
   # Targeted test runner command.
   # Use {test_file} placeholder for targeted test execution.
   # Examples:
@@ -159,3 +187,21 @@ ast:
     - ".venv/**"
     - "*.min.js"
     - "coverage/**"
+
+# ------------------------------------------------------------------------------
+# 5. Database Migration Reducer (Universal Multi-Stack DAG Intelligence)
+# ------------------------------------------------------------------------------
+migrations:
+  # Framework hint (optional):
+  #   - "alembic", "django", "prisma", "drizzle", "flyway", "rails", "knex",
+  #     "typeorm", "sequelize", "goose", "golang-migrate", "liquibase", "atlas", "custom"
+  # When omitted, GDSS uses universal timestamp/sequence pattern matching.
+  # framework: "alembic"
+
+  # Path glob patterns to track for database migration split-heads
+  paths:
+    - "migrations/**"
+    - "alembic/versions/**"
+    - "db/migrate/**"
+    - "prisma/migrations/**"
+
