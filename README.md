@@ -57,6 +57,7 @@ Integrate GDSS PR Collision Radar into this repository using the authoritative s
 ## 📑 Table of Contents
 - [🤖 1-Prompt Integration for AI Agents](#-1-prompt-integration-for-ai-agents-cursor-claude-code-copilot-antigravity)
 - [📚 Documentation Library](#-documentation-library)
+- [💰 Pricing & Commercial Model](#-pricing--commercial-model)
 - [🎯 The Problem: Single-PR Blindness](#-the-problem-single-pr-blindness)
 - [🔬 How It Works: The 7 Intelligence Layers](#-how-it-works-the-7-intelligence-layers)
 - [🌐 Supported Languages & Multi-Asset Reducers](#-supported-languages--multi-asset-reducers)
@@ -711,6 +712,20 @@ Your IDE AI agent gains 6 deterministic, zero-token tools:
 - `gdss_plan_semantic_rebase`: Rebase recommendations distinguishing signature shifts from noise.
 - `gdss_sandbox_validate_patch`: Tests candidate patches in ephemeral Git worktrees.
 - `gdss_validate_patch`: Instant syntax and static type verification.
+
+---
+
+## 💰 Pricing & Commercial Model
+
+GDSS is distributed under a **Closed-Engine, Free-Action** commercial model (similar to SonarQube, Snyk, and Codecov). We believe that pull request collision radar and repository intelligence should be accessible to every developer and engineering team without cost friction:
+
+| Plan | Pricing | Target Audience | What is Included |
+| :--- | :---: | :--- | :--- |
+| **Community / Open Source** | **$0 / Free Forever** | Individual developers, OSS maintainers, and public/private GitHub repositories | • **100% Free Deterministic Core** ($0 & 0 tokens charged by GDSS)<br>• Unlimited pull request collision radar audits<br>• Full pairwise interaction tensor ($\Omega_{ij}$)<br>• Multi-asset reducers (manifests, database migrations, SQL)<br>• Monorepo subpackage intelligence & worktree caching<br>• Bring Your Own Key (BYOK) AI convergence suggestions<br>• Standalone CLI & IDE MCP Server (Cursor, Claude Code, Copilot) |
+| **Team & Organization** | **Contact / Early Access** | Scaling engineering teams managing multi-repo microservices | • **Cross-Repository Collision Radar** (audits API contract breaks across multiple microservice repos *before* deploy)<br>• Centralized branch landing policies & merge queues<br>• Dedicated managed cloud runners (zero GitHub Actions minute consumption)<br>• SOC2 compliance audit logs, SSO/SAML, & Enterprise SLA |
+
+> 💬 **Enterprise & Multi-Repo Inquiries:**  
+> To discuss multi-repository microservice collision radar or organization governance for your team, start a thread on [GitHub Discussions](https://github.com/sarthak2233/gdss-radar/discussions).
 
 ---
 

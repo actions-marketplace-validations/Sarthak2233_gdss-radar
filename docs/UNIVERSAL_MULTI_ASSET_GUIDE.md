@@ -112,48 +112,42 @@ If a project uses non-standard, custom, or nested folder paths (e.g. `src/module
 
 ---
 
-## Domain Reducers
+## Domain Reducers & Multi-Asset Intelligence
 
-### 1. Migration DAG Reducer (`gdss/reducers/migration_reducer.py`)
+### 1. Database Migration Intelligence
 Tracks database migration dependencies and sequence DAGs across all major web frameworks and database migration stacks:
 - **Universal Multi-Stack Coverage**:
-  - **Python**: **Alembic** (`down_revision` parent strings) and **Django** (`dependencies = [('app', '0001_initial')]`).
-  - **Node / TypeScript**: **Prisma** (timestamp directory ordering under `prisma/migrations/`), **Drizzle** (`_journal.json` index sequences `idx` and meta snapshots), **Knex**, **TypeORM**, and **Sequelize**.
-  - **Go**: **Goose** and **Golang-migrate** (sequential version prefixes and Unix/compact timestamps).
-  - **Ruby**: **Rails Active Record** (`db/migrate/YYYYMMDDHHMMSS_...`).
-  - **Java / JVM**: **Flyway** (`V1__...`, `V2__...`) and **Liquibase**.
+  - **Python**: **Alembic** and **Django**.
+  - **Node / TypeScript**: **Prisma**, **Drizzle**, **Knex**, **TypeORM**, and **Sequelize**.
+  - **Go**: **Goose** and **Golang-migrate**.
+  - **Ruby**: **Rails Active Record**.
+  - **Java / JVM**: **Flyway** and **Liquibase**.
   - **Declarative & Custom**: **Atlas** and generic timestamped/sequenced raw SQL migrations.
-- **Universal Pattern Matching & Fallback**:
-  - **Timestamp Extraction**: Regex matching compact timestamps `\d{10,14}` across directory names and filenames.
-  - **Sequence Extraction**: Regex matching integer sequences `[vV]?\d+`.
-  - **Universal Stem Fallback**: If no explicit parent revision is parsed, GDSS constructs a canonical stem operator `migration::step::{stem}`. This guarantees that **any** simultaneous additions to migration folders trigger collision alerts.
-- **Operator Generation**: Emits `OperatorType.MIGRATION_STEP` with target name `migration_parent::<parent_id>` or `migration_step::<step>`.
-- **Collision Behavior**: If two concurrent branches branch from the same parent or append competing migration steps, GDSS assigns $\Omega_{ij} = 1.0$ (Critical) with badge `🗄️ Split-Head Hazard` and recommends a re-parenting command.
+- **Split-Head Collision Prevention**:
+  - Automatically discovers migration directories and tracks sequential timestamps, integer sequences, and parent dependency DAGs.
+  - When two concurrent branches fork from the same base revision or introduce competing migration steps, GDSS assigns $\Omega_{ij} = 1.0$ (Critical) with badge `🗄️ Split-Head Hazard` and recommends a re-parenting command before merge.
 
-### 2. Manifest Reducer (`gdss/reducers/manifest_reducer.py`)
-Parses `package.json`, `Cargo.toml`, and `pyproject.toml`:
-- **Granular Operators**:
-  - `OperatorType.ADD_DEPENDENCY`: Target `manifest::<file>::dependencies.<pkg>`.
-  - `OperatorType.MODIFY_DEPENDENCY`: Version constraint updates.
-  - `OperatorType.REMOVE_DEPENDENCY`: Deleted packages.
-- **Commutativity Logic**:
-  - If Branch A adds `axios@^1.6` and Branch B adds `zod@^3.22`, the contact keys differ. They commute independently ($[\mathcal{T}_A, \mathcal{T}_B] = 0$, $\Omega_{ij} = 0.0$).
-  - If Branch A adds `axios@^1.6` and Branch B adds `axios@^0.28`, the contact keys clash. The operators do not commute, triggering `📦 Manifest Divergence`.
+### 2. Dependency Manifest & Lockfile Reconciliation
+Parses package manifests including `package.json`, `Cargo.toml`, and `pyproject.toml`:
+- **Granular Dependency Commutativity**:
+  - If Branch A adds `axios` and Branch B adds `zod`, GDSS recognizes that these operations are independent and commute without interference ($\Omega_{ij} = 0.0$).
+  - If Branch A and Branch B introduce conflicting version constraints for the same package, GDSS flags `📦 Manifest Divergence`.
+- **Deterministic Lockfile Sync**:
+  - GDSS never uses LLMs to hallucinate lockfile diffs. Instead, it runs native package managers (`pnpm`, `npm`, `yarn`, `cargo`, `poetry`) inside ephemeral sandbox worktrees to test and generate pristine lockfiles.
 
-### 3. SQL Schema Reducer (`gdss/reducers/sql_reducer.py`)
-Tokenizes standard DDL statements:
-- Extracts `CREATE TABLE <name>`, `ALTER TABLE <name> ADD COLUMN <col>`, and `DROP COLUMN <col>`.
-- Emits `OperatorType.SCHEMA_ADD_TABLE`, `SCHEMA_ADD_COLUMN`, and `SCHEMA_DROP_COLUMN`.
+### 3. SQL Schema Collision Detection
+Analyzes DDL schema statements across database definition files:
+- Detects table creations, column additions, type alterations, and dropped columns.
 - Prevents breaking changes between simultaneous schema refactors and query additions.
 
-### 4. Markdown Section Reducer (`gdss/reducers/markdown_reducer.py`)
-Diffs structured documentation:
-- Analyzes changes scoped to ATX headings (`# Heading`, `## Subheading`).
-- Classifies list item additions under identical sections as `🔀 Union` candidates ($\Omega_{ij} \le 0.25$), recommending automated union merging without developer friction.
+### 4. Structured Documentation & Section Union
+Diffs structured documentation and changelogs:
+- Analyzes documentation sections and headings.
+- Classifies non-conflicting list additions under identical sections as `🔀 Union` candidates ($\Omega_{ij} \le 0.25$), recommending automated union merging without developer friction.
 
-### 5. Universal Lexical Safety Net (`gdss/reducers/lexical_reducer.py`)
-The ultimate safety net for any text file:
-- Emits `OperatorType.LEXICAL_CHUNK_EDIT` with 1-indexed line ranges and content hashes.
+### 5. Universal Lexical Safety Net
+The ultimate safety net for any text or configuration file:
+- Analyzes line modifications and content hashes across YAML, `.env`, Dockerfile, and configuration files.
 - Dispatches overlapping chunk edits as `⚙️ Lexical Overlap`, guaranteeing zero unpredicted merge conflicts.
 
 ---

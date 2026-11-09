@@ -469,6 +469,20 @@ When candidate reconciliation patches are synthesized, GDSS compiles and validat
 
 ---
 
+## 💰 Pricing & Commercial Model
+
+GDSS operates on a **Closed-Engine, Free-Action** model:
+
+| Plan | Pricing | Target Audience | What is Included |
+| :--- | :---: | :--- | :--- |
+| **Community / Open Source** | **$0 / Free Forever** | Individual developers, OSS maintainers, and public/private GitHub repos | • **100% Free Deterministic Core** ($0 & 0 tokens charged by GDSS)<br>• Unlimited pull request collision radar audits<br>• Full pairwise interaction tensor ($\Omega_{ij}$)<br>• Multi-asset reducers (manifests, database migrations, SQL)<br>• Monorepo subpackage intelligence & worktree caching<br>• Bring Your Own Key (BYOK) AI convergence suggestions<br>• Standalone CLI & IDE MCP Server (Cursor, Claude Code, Copilot) |
+| **Team & Organization** | **Contact / Early Access** | Scaling engineering teams managing multi-repo microservices | • **Cross-Repository Collision Radar** (audits API contract breaks across multiple microservice repos *before* deploy)<br>• Centralized branch landing policies & merge queues<br>• Dedicated managed cloud runners (zero GitHub Actions minute consumption)<br>• SOC2 compliance audit logs, SSO/SAML, & Enterprise SLA |
+
+> 💬 **Enterprise & Multi-Repo Inquiries:**  
+> Start a discussion on [GitHub Discussions](https://github.com/sarthak2233/gdss-radar/discussions).
+
+---
+
 ## 🛡️ Bring Your Own Compute (BYOC) & Privacy
 
 GDSS is engineered around transparent compute ownership and privacy:

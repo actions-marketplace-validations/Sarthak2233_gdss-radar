@@ -1,6 +1,6 @@
-# Parallel Orchestration & Lossless Context Architecture
+# Performance, Concurrency & Context Window Tuning Guide
 
-This guide explains how GDSS manages massive model context windows (128k to 2M tokens), eliminates destructive code condensation, and executes topological conflict partitioning to resolve multiple concurrent merge collisions in parallel with localized self-correction sub-loops.
+This guide explains how GDSS manages large model context windows (128k to 2M tokens), avoids destructive code truncation, and executes parallel conflict resolution with localized self-correction loops.
 
 ---
 
@@ -11,9 +11,8 @@ This guide explains how GDSS manages massive model context windows (128k to 2M t
 - [End-to-End Parallel Orchestration Flow](#end-to-end-parallel-orchestration-flow)
 - [Lossless Context Architecture & Zero-Harm Sizing](#lossless-context-architecture--zero-harm-sizing)
   - [3-Tier Model Context Window Discovery](#3-tier-model-context-window-discovery)
-  - [Why Blind String-Slicing Was Destroying Semantics](#why-blind-string-slicing-was-destroying-semantics)
   - [The Lossless Guarantee](#the-lossless-guarantee)
-- [Local Sub-Loop Refinement Mechanism](#local-sub-loop-refinement-mechanism)
+- [Two-Ring Self-Correction Mechanism](#two-ring-self-correction-mechanism)
 - [CLI and Configuration Reference](#cli-and-configuration-reference)
 
 ---
@@ -23,7 +22,7 @@ This guide explains how GDSS manages massive model context windows (128k to 2M t
 When developer teams scale their projects, concurrent pull requests frequently touch multiple files and AST symbols across the repository. A branch collision may contain 5, 10, or 20 distinct conflict points.
 
 Historically, AI-assisted code tools faced two fatal pitfalls when attempting to resolve complex collisions:
-1. **The Context Starvation Trap (Destructive Truncation):** Tools attempt to fit large files into small prompts by slicing lines in half (`[:half] + "\n# ... [truncated] ...\n" + [-half:]`). This amputates variables, inner functions, type signatures, and imports, depriving the LLM of necessary context and producing broken syntax or hallucinatory diffs.
+1. **The Context Starvation Trap (Destructive Truncation):** Tools attempt to fit large files into small prompts by slicing lines in half. This amputates variables, inner functions, type signatures, and imports, depriving the LLM of necessary context and producing broken syntax or hallucinatory diffs.
 2. **The Monolithic Batching Trap (Output Token Saturation & Loss of Attention):** Tools attempt to bundle all 10 conflicts into one massive prompt. While modern LLMs boast 128k, 200k, or even 1M–2M context windows, their **output generation limits remain capped at 4,096 to 8,192 tokens**. Synthesizing 10 multi-file patches in a single response inevitably exhausts output limits, while "lost-in-the-middle" attention degradation leads to subtle logic bugs.
 
 GDSS resolves this through **Topological Conflict Partitioning** and **Lossless Semantic Context Allocation**.
@@ -67,14 +66,14 @@ Worker 3: [---- Conflict 3 (5.2s) ----]
 flowchart TD
     subgraph S1 ["1 · Deterministic Conflict Partitioning"]
         SugList["Analyzed Suggestions (S₁, S₂, ..., Sₙ)"]
-        Partitioner["Conflict Partitioner (partition_conflicts)"]
+        Partitioner["Conflict Partitioner"]
         SugList --> Partitioner
         Partitioner -->|"File A Cluster"| C1["Cluster 1: [login, verify_token]<br>Coupled file context"]
         Partitioner -->|"File B Independent"| C2["Cluster 2: billing.py<br>Independent component"]
         Partitioner -->|"File C Independent"| C3["Cluster 3: app.tsx<br>Independent component"]
     end
 
-    subgraph S2 ["2 · Parallel Drafting & Local Sub-Loops (ThreadPoolExecutor)"]
+    subgraph S2 ["2 · Parallel Drafting & Local Sub-Loops"]
         Pool["ThreadPoolExecutor (concurrency_limit)"]
         C1 --> Pool
         C2 --> Pool
@@ -84,7 +83,7 @@ flowchart TD
             Ctx1["Lossless 3-Way Context"]
             LLM1["LLM Completion"]
             Check1{"Syntax Valid?"}
-            SubRefine1["Local Sub-Loop Refine<br>(max_local_refinements)"]
+            SubRefine1["Local Sub-Loop Refine"]
             Ctx1 --> LLM1 --> Check1
             Check1 -- "No" --> SubRefine1 --> Check1
             Check1 -- "Yes" --> Ready1["Cluster 1 Ready"]
@@ -150,7 +149,7 @@ flowchart LR
 
     subgraph Comparison ["Context Strategy Comparison"]
         subgraph Bad ["❌ Naive String Slicing"]
-            B1["code[:half] + '[truncated]' + code[-half:]"]
+            B1["Blind character truncation"]
             B2["Cuts tokens in half · Destroys variables & scope"]
             B3["Results in broken diff headers & syntax errors"]
             B1 --> B2 --> B3
@@ -172,13 +171,10 @@ flowchart LR
 
 ### 3-Tier Model Context Window Discovery
 
-In [`gdss/ai/condensation.py`](../gdss/ai/condensation.py), GDSS automatically aligns prompt budgets with the true capacity of the selected provider:
+GDSS automatically aligns prompt budgets with the true capacity of the selected provider:
 
 1. **Tier 1 (Explicit User / CI Override):** Passed via CLI `--context-window <N>`, environment variable `GDSS_CONTEXT_WINDOW=<N>`, or `.gdss.yml` configuration.
-2. **Tier 2 (Dynamic Provider API Metadata):** Interrogates runtime endpoints in real time:
-   - **OpenRouter:** `GET https://openrouter.ai/api/v1/models` $\rightarrow$ reads `context_length`.
-   - **Ollama:** `POST http://localhost:11434/api/show` $\rightarrow$ reads `model_info.context_length`.
-   - **vLLM:** `GET http://localhost:8000/v1/models` $\rightarrow$ reads `max_model_len`.
+2. **Tier 2 (Dynamic Provider API Metadata):** Interrogates runtime endpoints in real time (OpenRouter, Ollama, vLLM).
 3. **Tier 3 (Resilient Family Heuristics):**
    - **Gemini 1.5 Pro / 2.0 Pro:** $2,000,000\text{ tokens}$ ($\sim 5,600,000\text{ chars}$)
    - **Gemini 1.5 Flash / 2.0 Flash:** $1,000,000\text{ tokens}$ ($\sim 2,800,000\text{ chars}$)
@@ -188,42 +184,28 @@ In [`gdss/ai/condensation.py`](../gdss/ai/condensation.py), GDSS automatically a
    - **Qwen 2.5 Coder:** $32,768\text{ tokens}$
    - **Safe Fallback:** $16,384\text{ tokens}$
 
-### Why Blind String-Slicing Was Destroying Semantics
-
-Earlier tools attempted to bound code by taking the first 100 lines and last 100 lines, or splitting by character index:
-```python
-# DESTRUCTIVE (REMOVED FROM GDSS):
-condensed = code[:half] + "\n# ... [truncated] ...\n" + code[-half:]
-```
-This naive truncation:
-- Split tokens in half (e.g. `re\n# ... [truncated] ...\nturn 42`).
-- Removed variable initializations defined in the middle of a function.
-- Inverted conditional blocks, removing `if` conditions while leaving un-indented `else` clauses.
-- Completely destroyed unified diff line offsets, making it impossible for `git apply` to reconcile the patch.
-
 ### The Lossless Guarantee
 
 In GDSS:
-- **`condensation_mode: "lossless"` is the active default.**
-- Because conflicts are partitioned by file and symbol cluster, the context block for any given conflict is focused (typically 200 to 2,000 lines).
-- In a modern model with 128k to 2M tokens, a 2,000-line function consumes less than **3% of the context window**.
-- **GDSS will NEVER slice or truncate the conflicting symbol.** The entire symbol, its outer signatures, and its caller references are preserved 100% losslessly.
-- If a single auto-generated file genuinely exceeds the model's physical window (e.g. a 50,000-line JSON or machine-generated file), GDSS uses Tree-sitter AST parsing to collapse only unreferenced distant sibling function bodies to `...`, strictly keeping the conflicting anchor intact.
+- **`condensation: "lossless"` is the active default.**
+- Because conflicts are partitioned into independent clusters, the code context for any single conflict is tight and focused (typically 200 to 2,000 lines).
+- In modern models with 128k to 2M tokens, a 2,000-line function consumes less than **3% of the context window**.
+- **GDSS will NEVER slice or truncate the conflicting symbol.** The entire symbol, its outer signatures, and caller references are preserved 100% losslessly.
 
 ---
 
-## Local Sub-Loop Refinement Mechanism
+## Two-Ring Self-Correction Mechanism
 
 Rather than restarting the entire multi-suggestion convergence pipeline when a patch has a syntax error, GDSS divides self-correction into **two concentric rings**:
 
 ### 1. The Fast Local Ring (In-Worker Sub-Loop)
-- Runs immediately inside the drafting thread in [`_draft_combinations()`](../gdss/ai/suggester.py).
-- Performs instant in-memory AST syntax parsing and unified diff header validation via `validate_patch()`.
-- If the model emitted malformed markdown backticks, invalid diff offsets, or broken syntax, the worker re-prompts the model with the exact syntax parser error.
+- Runs immediately inside the drafting thread.
+- Performs instant in-memory AST syntax parsing and unified diff header validation.
+- If the model emitted malformed markdown backticks, invalid diff offsets, or broken syntax, the worker re-prompts the model with the exact syntax parser error trace.
 - Completes in milliseconds without blocking other concurrent workers.
 
 ### 2. The Global Composite Ring (Sandbox Verification)
-- Runs once all parallel workers have emitted syntax-clean patches in [`validate_step()`](../gdss/ai/orchestration.py).
+- Runs once all parallel workers have emitted syntax-clean patches.
 - Applies the composite patch set into an ephemeral Git worktree sandbox.
 - Executes full multi-file compiler checks (`mypy`, `tsc`, `cargo check`) and targeted test suites (`pytest`, `vitest`).
 - If cross-file type mismatches occur, the global refinement loop routes the compiler trace back to the relevant strategy for targeted resolution.
@@ -264,4 +246,5 @@ radar:
   # Sandbox timeout in seconds
   sandbox_timeout: 30
 ```
+
 

@@ -555,7 +555,7 @@ In the dashboard top bar:
 
 GDSS is designed from first principles to be **completely provider-agnostic**. It does **not** bind your repository to proprietary OpenAI APIs or require specific vendor billing accounts.
 
-Internally, GDSS’s core LLM client is [OpenAICompatibleProvider](file:///home/sarakb/projects/GDSS/gdss/ai/openai_provider.py#L17-L110). It implements the universal open standard:
+GDSS communicates with inference providers using the universal open standard:
 ```http
 POST /v1/chat/completions
 Content-Type: application/json

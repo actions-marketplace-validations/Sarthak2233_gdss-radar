@@ -329,7 +329,7 @@ Passing the base branch plus 5 or 10 concurrent PR branches simultaneously into 
 
 #### The 5-Step Pairwise 3-Way Batch Pipeline
 
-To eliminate these failure modes while keeping CI execution unified, [`audit_pr_workflow()`](file:///home/sarakb/projects/GDSS/gdss/validation/pr_audit.py) uses a structured pairwise batching loop:
+To eliminate these failure modes while keeping CI execution unified, GDSS PR Collision Radar uses a structured pairwise batching loop:
 
 1. **Autonomous Concurrent PR Discovery:**  
    When PR #42 triggers the workflow, GDSS queries GitHub's REST API (`GET /repos/{owner}/{repo}/pulls?state=open`) to discover all open pull requests targeting `main`. PRs matching exclusion patterns in `.gdss.yml` (e.g. `dependabot/*`, `archive/*`) or differing target base branches are pruned automatically.
@@ -340,9 +340,9 @@ To eliminate these failure modes while keeping CI execution unified, [`audit_pr_
    - **Triangle 1:** Base Attractor (`main`) vs Incoming PR #42 vs Concurrent PR #41
    - **Triangle 2:** Base Attractor (`main`) vs Incoming PR #42 vs Concurrent PR #39
    
-   Using [`extract_3way_symbol_context()`](file:///home/sarakb/projects/GDSS/gdss/ai/context_builder.py), GDSS extracts only the exact AST symbol definitions across the 3 versions ($V_{base}, V_{incoming}, V_{concurrent}$), line numbers, and impacted callers.
+   GDSS extracts only the exact AST symbol definitions across the 3 versions ($V_{base}, V_{incoming}, V_{concurrent}$), line numbers, and impacted callers.
 4. **Sandboxed Validation in Ephemeral Worktrees:**  
-   For each triangle, [`build_conflict_prompt()`](file:///home/sarakb/projects/GDSS/gdss/ai/prompt_builder.py) requests a minimal replacement block or unified diff. GDSS checks out an isolated Git worktree (`/tmp/gdss-sandbox-...`), applies the patch, and verifies syntax, types (`mypy`), and targeted unit tests. If verification fails, the agentic refinement loop self-corrects up to `max_refinements` (default 2 retries).
+   For each triangle, GDSS synthesizes a minimal replacement block or unified diff, checks out an isolated ephemeral Git worktree, applies the candidate patch, and verifies syntax, types, and targeted unit tests. If verification fails, the agentic refinement loop self-corrects up to `max_refinements` (default 2 retries).
 5. **Single Unified Sticky Radar Report:**  
    All evaluated pairs (both clear and colliding) are aggregated into a single, comprehensive sticky Markdown report posted to the incoming PR:
 
