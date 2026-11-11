@@ -104,6 +104,16 @@ jobs:
 >
 > **AI Convergence Suggestions (Strict BYOK)**: To generate natural-language conflict explanations and automated 1-click reconciliation patches, the repository maintainer provides their chosen provider key (e.g. `OPENAI_API_KEY`, `DEEPSEEK_API_KEY`, or `OPENROUTER_API_KEY`) as a GitHub Repository Secret. Developers opening PRs never need personal keys.
 
+> [!TIP]
+> **Sandboxed Validation for .NET, Rust, and Node Projects**:
+> When using ephemeral sandbox validation (`test_command` or `typecheck_command`), ensure the runner environment provides your stack's build tools (e.g. `actions/setup-dotnet@v4` for .NET, `actions/setup-node@v4` for Node, or `dtolnay/rust-toolchain@master` for Rust) before the GDSS step:
+> ```yaml
+>       - name: Set up .NET SDK
+>         uses: actions/setup-dotnet@v4
+>         with:
+>           dotnet-version: '8.0.x'
+> ```
+
 ### Method 2: Custom / Self-Hosted Runner Workflow
 
 For private self-hosted runners or environments where you build from source:

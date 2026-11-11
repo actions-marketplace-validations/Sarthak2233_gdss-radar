@@ -164,21 +164,22 @@ GDSS does not treat source files as raw text strings. It uses a **3-tier code pa
 | | **Rust** | `.rs` | Structs, enums, traits, `impl` blocks, functions, macros |
 | | **Java** | `.java` | Classes, interfaces, records, methods, annotations |
 | | **C & C++** | `.c`, `.h`, `.cpp`, `.hpp`, `.cc`, `.cxx` | Functions, structs, classes, namespaces, headers |
-| **Tier 2: Dynamic Grammar Walker** | **Any Tree-sitter grammar** | Pluggable | Any language grammar registered dynamically |
-| **Tier 3: Structural Block Fallback** | **C#** | `.cs` | Classes, interfaces, methods, properties |
-| | **Kotlin & Swift** | `.kt`, `.kts`, `.swift` | Classes, structs, functions, protocols |
-| | **Ruby & PHP** | `.rb`, `.php` | Classes, modules, methods, functions |
-| | **Shell Scripts** | `.sh`, `.bash`, `.zsh` | Function definitions, exported variables |
-| | **Scala, Dart, Lua, Solidity** | `.scala`, `.dart`, `.lua`, `.sol` | Contracts, structs, classes, functions |
-| | **Custom Frameworks** | `.vue`, `.svelte`, `.prisma`, `.graphql` | Configurable via `ast.additional_extensions` in `.gdss.yml` |
+| | **C# (.NET 6-9)** | `.cs`, `.csx` | Namespaces, classes, records, structs, interfaces, methods, constructors, properties with `required`/`init`, generic constraints |
+| | **Ruby** | `.rb` | Classes, modules, methods, singleton methods |
+| | **Shell Scripts** | `.sh`, `.bash` | Function declarations, invocations, subshells |
+| **Tier 2: Sub-Document Projection** | **Blazor & Razor** | `.razor`, `.cshtml` | Extracts embedded `@code` and `@functions` blocks mapped 1-to-1 to C# AST |
+| | **Vue & Svelte** | `.vue`, `.svelte` | Extracts `<script>` and `<script setup>` tags mapped 1-to-1 to TS/JS AST |
+| **Tier 3: Lexical Advisory Mode** | **Kotlin, Swift, PHP, Dart, Scala** | `.kt`, `.swift`, `.php`, etc. | Transparent chunk diffing with `lexical_advisory: true` warning; safe commutativity |
 
 ### 2. Multi-Asset Domain Reducers (Non-Code Intelligence)
 
 Modern pull requests touch more than just code. GDSS includes built-in domain reducers for non-code files:
 
-- **📦 Dependency Manifests (`package.json`, `Cargo.toml`, `pyproject.toml`)**:
-  - Independent package additions commute ($[\mathcal{T}_A, \mathcal{T}_B] = 0$).
-  - Overlapping additions with divergent version constraints trigger collision warnings.
+- **📦 Dependency Manifests & MSBuild DAGs**:
+  - `package.json`, `Cargo.toml`, `pyproject.toml`.
+  - `.csproj`, `.props`, `.targets`, `Directory.Build.props`, `Directory.Packages.props`, `.sln`, `.slnx`.
+  - Tracks NuGet `<PackageReference>`, Central Package Management (CPM) `<PackageVersion>`, project couplings `<ProjectReference>`, and Visual Studio solution project memberships.
+  - Independent package additions commute ($[\mathcal{T}_A, \mathcal{T}_B] = 0$). Overlapping additions with divergent version constraints trigger collision warnings.
   - Automatic lockfile synchronization in the sandbox (`pnpm-lock.yaml`, `yarn.lock`, `Cargo.lock`, `package-lock.json`).
 - **🗄️ Database Migrations (Split-Head Hazard)**:
   - Supports Alembic, Django, Prisma (`migrations/`, `schema.prisma`), Drizzle (`_journal.json`), Flyway, and Rails.
@@ -187,6 +188,8 @@ Modern pull requests touch more than just code. GDSS includes built-in domain re
   - Parses `CREATE TABLE`, `ALTER TABLE`, and column mutations to detect DDL conflicts across branches.
 - **📝 Documentation (`.md`)**:
   - Scopes diffs to ATX headings (`#`, `##`), preventing merge conflicts when authors add distinct sections to the same document.
+- **🛡️ Noise & Generated Code Filtering**:
+  - Automatically filters out compiler artifacts (`*.Designer.cs`, `*.g.cs`, `*AssemblyInfo.cs`, `*.pb.go`, `*.min.js`, `bin/**`, `obj/**`, `target/**`) from collision scoring.
 - **⚙️ Configuration & Infrastructure (`.yml`, `.yaml`, `.env`, `Dockerfile`)**:
   - Line-level lexical chunk diffing with proximity awareness.
 
@@ -608,6 +611,25 @@ radar:
 validation:
   test_command: "cargo test --test {test_file}"
   typecheck_command: "cargo check"
+  timeout_seconds: 90
+
+hierarchy:
+  reference_branch: "main"
+  same_base_only: true
+```
+
+### 5. .NET / C# (Solution & Project Builds)
+```yaml
+radar:
+  model: "gpt-4o"
+  context_window: 128000
+  provider: "openrouter"
+  risk_threshold: 0.1
+  max_refinements: 2
+
+validation:
+  test_command: "dotnet test --no-build"
+  typecheck_command: "dotnet build --no-incremental"
   timeout_seconds: 90
 
 hierarchy:
