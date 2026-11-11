@@ -95,11 +95,12 @@ File routing occurs in two stages without requiring users to manually configure 
 
 ### Stage A: Advisory Path Sniffer
 The router examines the file path against standardized repository layout conventions:
-- **Manifests**: `package.json`, `Cargo.toml`, `pyproject.toml`.
+- **Manifests & Build Projects**: `package.json`, `Cargo.toml`, `pyproject.toml`, `.csproj`, `.props`, `.targets`, `Directory.Build.props`, `Directory.Packages.props`, `.sln`, `.slnx`.
 - **Migrations**: `**/migrations/**`, `**/migration/**`, `**/migrate/**`, `alembic/**`, `prisma/migrations/**`, `drizzle/**`, `db/migrations/meta/*.json`, `supabase/migrations/**`, `flyway/**`.
 - **SQL DDL**: `*.sql`.
 - **Documentation**: `*.md`, `*.rst`.
-- **Code ASTs**: Extensions matching registered Tree-sitter parsers (`.py`, `.ts`, `.js`, `.go`, `.rs`, `.java`, `.c`, `.cpp`).
+- **Code ASTs**: Extensions matching registered Tree-sitter parsers (`.py`, `.ts`, `.js`, `.go`, `.rs`, `.java`, `.c`, `.cpp`, `.cs`, `.csx`, `.rb`, `.sh`, `.bash`).
+- **Hybrid Sub-Documents**: Region projection for Blazor (`.razor`, `.cshtml`) and Vue/Svelte (`.vue`, `.svelte`).
 
 ### Stage B: Content-First Deep Sniffer
 If a project uses non-standard, custom, or nested folder paths (e.g. `src/modules/billing/db_rev_42.py`), the sniffer inspects file content:
@@ -127,25 +128,40 @@ Tracks database migration dependencies and sequence DAGs across all major web fr
   - Automatically discovers migration directories and tracks sequential timestamps, integer sequences, and parent dependency DAGs.
   - When two concurrent branches fork from the same base revision or introduce competing migration steps, GDSS assigns $\Omega_{ij} = 1.0$ (Critical) with badge `🗄️ Split-Head Hazard` and recommends a re-parenting command before merge.
 
-### 2. Dependency Manifest & Lockfile Reconciliation
-Parses package manifests including `package.json`, `Cargo.toml`, and `pyproject.toml`:
-- **Granular Dependency Commutativity**:
-  - If Branch A adds `axios` and Branch B adds `zod`, GDSS recognizes that these operations are independent and commute without interference ($\Omega_{ij} = 0.0$).
-  - If Branch A and Branch B introduce conflicting version constraints for the same package, GDSS flags `📦 Manifest Divergence`.
+### 2. Dependency Manifest & Project Build DAG Reconciliation
+Parses package manifests and project descriptors across ecosystems:
+- **Universal Package Manifests (`package.json`, `Cargo.toml`, `pyproject.toml`)**:
+  - Independent package additions commute ($[\mathcal{T}_A, \mathcal{T}_B] = 0$).
+  - Overlapping additions with divergent version constraints trigger `📦 Manifest Divergence`.
+- **.NET & MSBuild Projects (`.csproj`, `.props`, `.targets`, `Directory.Build.props`, `Directory.Packages.props`, `.sln`, `.slnx`)**:
+  - **NuGet Package References**: Tracks `<PackageReference>` additions, removals, and version shifts.
+  - **Central Package Management (CPM)**: Accurately diffs `<PackageVersion>` declarations in repository-wide `Directory.Packages.props`.
+  - **Inter-Project Coupling**: Detects added or broken project linkages (`<ProjectReference>`).
+  - **Visual Studio Solutions**: Evaluates solution project membership across `.sln` and `.slnx` files.
 - **Deterministic Lockfile Sync**:
   - GDSS never uses LLMs to hallucinate lockfile diffs. Instead, it runs native package managers (`pnpm`, `npm`, `yarn`, `cargo`, `poetry`) inside ephemeral sandbox worktrees to test and generate pristine lockfiles.
 
-### 3. SQL Schema Collision Detection
+### 3. Hybrid Frameworks (Blazor & Vue/Svelte)
+Modern component frameworks blend UI markup with executable logic:
+- **Blazor (`.razor`, `.cshtml`)**: Extracts embedded `@code` and `@functions` logic blocks, mapping methods, properties, and constructors with exact line coordinates to prevent false conflicts on markup formatting.
+- **Vue & Svelte (`.vue`, `.svelte`)**: Isolates `<script>` and `<script setup>` logic blocks to evaluate semantic AST contracts independently of template updates.
+
+### 4. Automated Noise & Generated Code Exclusion
+Build systems and compiler tools produce repetitive boilerplate that can skew collision scoring:
+- GDSS automatically ignores compiler artifacts and generated files (`*.Designer.cs`, `*.g.cs`, `*AssemblyInfo.cs`, `*.pb.go`, `*.min.js`, `bin/**`, `obj/**`, `target/**`).
+- Guarantees that collision alerts reflect real human intent rather than automated compiler churn.
+
+### 5. SQL Schema Collision Detection
 Analyzes DDL schema statements across database definition files:
 - Detects table creations, column additions, type alterations, and dropped columns.
 - Prevents breaking changes between simultaneous schema refactors and query additions.
 
-### 4. Structured Documentation & Section Union
+### 6. Structured Documentation & Section Union
 Diffs structured documentation and changelogs:
 - Analyzes documentation sections and headings.
 - Classifies non-conflicting list additions under identical sections as `🔀 Union` candidates ($\Omega_{ij} \le 0.25$), recommending automated union merging without developer friction.
 
-### 5. Universal Lexical Safety Net
+### 7. Universal Lexical Safety Net
 The ultimate safety net for any text or configuration file:
 - Analyzes line modifications and content hashes across YAML, `.env`, Dockerfile, and configuration files.
 - Dispatches overlapping chunk edits as `⚙️ Lexical Overlap`, guaranteeing zero unpredicted merge conflicts.

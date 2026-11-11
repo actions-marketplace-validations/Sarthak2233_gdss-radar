@@ -120,6 +120,7 @@ validation:
   #   Python:        "pytest {test_file}"
   #   Go:            "go test -v ./{test_file}/..."
   #   Rust:          "cargo test --test {test_file}"
+  #   C# / .NET:     "dotnet test --no-build"
   test_command: "npm test -- {test_file}"
 
   # Static type checker or linter command.
@@ -129,6 +130,7 @@ validation:
   #   Python:        "mypy {file}"
   #   Go:            "golangci-lint run"
   #   Rust:          "cargo check"
+  #   C# / .NET:     "dotnet build --no-incremental"
   typecheck_command: "npx tsc --noEmit"
 
   # Maximum duration in seconds allowed for validation runs in the sandbox.
@@ -178,7 +180,9 @@ ast:
     - ".svelte"
     - ".sol"
 
-  # File paths to exclude from AST symbol parsing and collision analysis
+  # File paths to exclude from AST symbol parsing and collision analysis.
+  # NOTE: Compiler artifacts and generated files (*.Designer.cs, *.g.cs, *AssemblyInfo.cs,
+  # *.pb.go, *.min.js, bin/**, obj/**, target/**) are automatically excluded by default.
   exclude_patterns:
     - "node_modules/**"
     - "dist/**"
